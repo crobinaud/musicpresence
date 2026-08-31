@@ -5,15 +5,20 @@
   "private": true,
   "scripts": {
     "commitlint": "commitlint",
-    "release": "semantic-release"
+    "release": "semantic-release",
+    "prepare": "husky"
   },
   "commitlint": {
     "extends": [
       "@commitlint/config-conventional"
     ],
     "rules": {
-      "body-max-line-length": [0],
-      "footer-max-line-length": [0]
+      "body-max-line-length": [
+        0
+      ],
+      "footer-max-line-length": [
+        0
+      ]
     }
   },
   "release": {
@@ -31,12 +36,30 @@
         {
           "preset": "conventionalcommits",
           "releaseRules": [
-            { "type": "feat", "release": "minor" },
-            { "type": "fix", "release": "patch" },
-            { "type": "perf", "release": "patch" },
-            { "type": "refactor", "release": "patch" },
-            { "type": "docs", "release": "patch" },
-            { "type": "chore", "release": false }
+            {
+              "type": "feat",
+              "release": "minor"
+            },
+            {
+              "type": "fix",
+              "release": "patch"
+            },
+            {
+              "type": "perf",
+              "release": "patch"
+            },
+            {
+              "type": "refactor",
+              "release": "patch"
+            },
+            {
+              "type": "docs",
+              "release": "patch"
+            },
+            {
+              "type": "chore",
+              "release": false
+            }
           ]
         }
       ],
@@ -88,6 +111,7 @@
     "@semantic-release/github": "^11.0.1",
     "@semantic-release/release-notes-generator": "^14.0.3",
     "conventional-changelog-conventionalcommits": "^8.0.0",
+    "husky": "^9.1.7",
     "semantic-release": "^24.2.3"
   }
 }

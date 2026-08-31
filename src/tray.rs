@@ -18,9 +18,9 @@ use windows::Win32::UI::WindowsAndMessaging::{
     KillTimer, LoadIconW, PostMessageW, PostQuitMessage, RegisterClassW, RegisterWindowMessageW,
     SetForegroundWindow, SetTimer, SetWindowLongPtrW, TrackPopupMenu, GWLP_USERDATA, HICON,
     ICONINFO, IDI_APPLICATION, MF_SEPARATOR, MF_STRING, MSG, TPM_BOTTOMALIGN, TPM_LEFTALIGN,
-    TPM_RETURNCMD, TPM_RIGHTBUTTON, WINDOW_EX_STYLE, WM_CONTEXTMENU, WM_DESTROY,
-    WM_LBUTTONDBLCLK, WM_LBUTTONUP, WM_NULL, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_TIMER, WM_USER,
-    WNDCLASSW, WS_OVERLAPPEDWINDOW,
+    TPM_RETURNCMD, TPM_RIGHTBUTTON, WINDOW_EX_STYLE, WM_CONTEXTMENU, WM_DESTROY, WM_LBUTTONDBLCLK,
+    WM_LBUTTONUP, WM_NULL, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_TIMER, WM_USER, WNDCLASSW,
+    WS_OVERLAPPEDWINDOW,
 };
 
 const WM_TRAYICON: u32 = WM_USER + 100;
@@ -311,12 +311,7 @@ unsafe fn show_menu(ctx: &TrayContext) {
         ID_MENU_PRESENCE,
         PCWSTR(presence_w.as_ptr()),
     );
-    let _ = AppendMenuW(
-        menu,
-        MF_SEPARATOR,
-        0,
-        PCWSTR::null(),
-    );
+    let _ = AppendMenuW(menu, MF_SEPARATOR, 0, PCWSTR::null());
     let _ = AppendMenuW(menu, MF_STRING, ID_MENU_QUIT, PCWSTR(quit_w.as_ptr()));
 
     let mut cursor_pos = POINT::default();

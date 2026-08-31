@@ -14,15 +14,7 @@ const APP_NAME: PCWSTR = w!("MusicPresence");
 pub fn is_autostart_enabled() -> bool {
     unsafe {
         let mut hkey = HKEY::default();
-        if RegOpenKeyExW(
-            HKEY_CURRENT_USER,
-            RUN_KEY,
-            0,
-            KEY_QUERY_VALUE,
-            &mut hkey,
-        )
-        .is_ok()
-        {
+        if RegOpenKeyExW(HKEY_CURRENT_USER, RUN_KEY, 0, KEY_QUERY_VALUE, &mut hkey).is_ok() {
             let mut buf = [0u16; 512];
             let mut size = (buf.len() * 2) as u32;
             let res = RegQueryValueExW(
@@ -44,15 +36,7 @@ pub fn is_autostart_enabled() -> bool {
 pub fn set_autostart(enable: bool) -> Result<(), String> {
     unsafe {
         let mut hkey = HKEY::default();
-        if RegOpenKeyExW(
-            HKEY_CURRENT_USER,
-            RUN_KEY,
-            0,
-            KEY_SET_VALUE,
-            &mut hkey,
-        )
-        .is_err()
-        {
+        if RegOpenKeyExW(HKEY_CURRENT_USER, RUN_KEY, 0, KEY_SET_VALUE, &mut hkey).is_err() {
             return Err("Failed to open Windows Run registry key.".to_string());
         }
 
@@ -83,7 +67,10 @@ pub fn set_autostart(enable: bool) -> Result<(), String> {
 
         // Deleting a non-existent key returns error code 2 (ERROR_FILE_NOT_FOUND) which is fine
         if res.is_err() && (!enable && res.0 != 2) {
-            return Err(format!("Registry operation failed with error code: {:?}", res));
+            return Err(format!(
+                "Registry operation failed with error code: {:?}",
+                res
+            ));
         }
 
         Ok(())

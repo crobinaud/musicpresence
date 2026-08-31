@@ -111,8 +111,7 @@ filter_apple_music_only = true
     }
 
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), std::io::Error> {
-        let toml_str = toml::to_string_pretty(self)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        let toml_str = toml::to_string_pretty(self).map_err(std::io::Error::other)?;
         fs::write(path, toml_str)
     }
 }

@@ -72,7 +72,10 @@ pub fn open_settings_window(config: Arc<RwLock<Config>>) {
 }
 
 fn to_wstring(s: &str) -> Vec<u16> {
-    OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
+    OsStr::new(s)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect()
 }
 
 fn run_settings_gui(config: Arc<RwLock<Config>>) {
@@ -220,7 +223,7 @@ fn run_settings_gui(config: Arc<RwLock<Config>>) {
             hwnd_autoupdate: HWND(std::ptr::null_mut()),
         });
 
-        create_controls(hwnd, &mut *context, hinstance.into());
+        create_controls(hwnd, &mut context, hinstance.into());
 
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, Box::into_raw(context) as isize);
 
@@ -247,11 +250,7 @@ fn run_settings_gui(config: Arc<RwLock<Config>>) {
     }
 }
 
-unsafe fn create_controls(
-    parent: HWND,
-    ctx: &mut SettingsContext,
-    hinstance: HINSTANCE,
-) {
+unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HINSTANCE) {
     let cfg = match ctx.config.read() {
         Ok(c) => c.clone(),
         Err(_) => Config::default(),
@@ -642,7 +641,10 @@ unsafe fn trigger_manual_update_check(hwnd: HWND) {
                         }
                     }
                 } else {
-                    let info_msg = to_wstring(&format!("The new update is available on GitHub:\n{}", info.release_url));
+                    let info_msg = to_wstring(&format!(
+                        "The new update is available on GitHub:\n{}",
+                        info.release_url
+                    ));
                     let info_title = to_wstring("Release Page");
                     MessageBoxW(
                         hwnd,
@@ -701,7 +703,8 @@ unsafe fn save_settings(ctx: &SettingsContext) -> bool {
 
     let auto_start = SendMessageW(ctx.hwnd_autostart, BM_GETCHECK, WPARAM(0), LPARAM(0)).0 as usize
         == BST_CHECKED;
-    let auto_update = SendMessageW(ctx.hwnd_autoupdate, BM_GETCHECK, WPARAM(0), LPARAM(0)).0 as usize
+    let auto_update = SendMessageW(ctx.hwnd_autoupdate, BM_GETCHECK, WPARAM(0), LPARAM(0)).0
+        as usize
         == BST_CHECKED;
 
     let mut current_config = match ctx.config.read() {
@@ -715,7 +718,10 @@ unsafe fn save_settings(ctx: &SettingsContext) -> bool {
 
     // Apply startup registry setting
     if let Err(e) = crate::autostart::set_autostart(auto_start) {
-        crate::log_status(&format!("[WARN] Failed to configure Windows startup registry: {}", e));
+        crate::log_status(&format!(
+            "[WARN] Failed to configure Windows startup registry: {}",
+            e
+        ));
     }
 
     // Save to config.toml
@@ -793,7 +799,7 @@ unsafe extern "system" fn settings_wnd_proc(
             }
         }
         WM_COMMAND => {
-            let id = (wparam.0 & 0xFFFF) as usize;
+            let id = wparam.0 & 0xFFFF;
             if !ptr.is_null() {
                 let ctx = &*ptr;
                 match id {
