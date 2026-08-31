@@ -1,0 +1,19 @@
+# Apple Music Discord Presence Configuration (amprust)
+
+# Official Discord Application Client ID for Apple Music Rich Presence
+client_id = "1046420605907501056"
+
+# Verification interval in milliseconds (1500 = 1.5 seconds)
+poll_interval_ms = 1500
+
+# Show Discord presence when music is paused (true = shows "Paused", false = hides presence)
+show_paused = true
+
+# Fetch high-resolution album artwork via Apple iTunes API
+fetch_itunes_art = true
+
+# Display clickable "Listen on Apple Music" button in Discord
+enable_listen_button = true
+
+# Detect Apple Music only (set to false to support any Windows media player)
+filter_apple_music_only = true

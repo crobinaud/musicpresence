@@ -1,0 +1,36 @@
+[package]
+name = "amprust"
+version = "1.0.0"
+edition = "2021"
+authors = ["Cyprien"]
+description = "Apple Music Discord Rich Presence in pure optimized Rust"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+ureq = { version = "2.10", features = ["json", "tls"] }
+colored = "2.2"
+windows = { version = "0.58", features = [
+    "Media_Control",
+    "Foundation",
+    "Foundation_Collections",
+    "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
+] }
+tray-item = "0.10.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[build-dependencies]
+winres = "0.1.12"
