@@ -1,5 +1,5 @@
 {
-  "name": "amprust",
+  "name": "musicpresence",
   "version": "1.0.0",
   "description": "Apple Music Discord Rich Presence in Rust",
   "private": true,
@@ -12,8 +12,8 @@
       "@commitlint/config-conventional"
     ],
     "rules": {
-      "body-max-line-length": [0, "always", Infinity],
-      "footer-max-line-length": [0, "always", Infinity]
+      "body-max-line-length": [0],
+      "footer-max-line-length": [0]
     }
   },
   "release": {
