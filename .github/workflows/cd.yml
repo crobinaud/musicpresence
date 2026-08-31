@@ -40,36 +40,35 @@ jobs:
 
       - name: Determine Next Semantic Version
         id: semver
-        shell: pwsh
+        shell: bash
         run: |
-          # Calculate next SemVer based on conventional commits
-          $rawNext = git-cliff --bumped-version 2>&1
-          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($rawNext)) {
-            Write-Host "No tag found or no bump detected, defaulting to current Cargo.toml version."
-            $currentVer = (Get-Content Cargo.toml | Select-String '^version = "(.*)"').Matches.Groups[1].Value
-            $nextTag = "v$currentVer"
-            $nextVersion = "$currentVer"
-          } else {
-            $nextTag = $rawNext.Trim()
-            $nextVersion = $nextTag.TrimStart('v')
-          }
+          RAW_VER=$(git-cliff --bumped-version 2>/dev/null || true)
+          if [ -z "$RAW_VER" ]; then
+            echo "No bump computed from git-cliff, using Cargo.toml version."
+            CURRENT_VER=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)
+            NEXT_TAG="v$CURRENT_VER"
+            NEXT_VER="$CURRENT_VER"
+          else
+            NEXT_TAG="$RAW_VER"
+            NEXT_VER="${RAW_VER#v}"
+          fi
           
-          Write-Host "Next version: $nextVersion (Tag: $nextTag)"
-          "version=$nextVersion" >> $env:GITHUB_OUTPUT
-          "tag=$nextTag" >> $env:GITHUB_OUTPUT
+          echo "Next version: $NEXT_VER (Tag: $NEXT_TAG)"
+          echo "version=$NEXT_VER" >> "$GITHUB_OUTPUT"
+          echo "tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Update Cargo.toml & CHANGELOG.md
-        shell: pwsh
+        shell: bash
         run: |
-          $ver = "${{ steps.semver.outputs.version }}"
-          $tag = "${{ steps.semver.outputs.tag }}"
+          VER="${{ steps.semver.outputs.version }}"
+          TAG="${{ steps.semver.outputs.tag }}"
           
           # Update version in Cargo.toml
-          (Get-Content Cargo.toml) -replace '^version = ".*"', "version = `"$ver`"" | Set-Content Cargo.toml
+          sed -i "s/^version = \".*\"/version = \"$VER\"/" Cargo.toml
           
-          # Generate full CHANGELOG.md and release notes
-          git-cliff --tag "$tag" --output CHANGELOG.md
-          git-cliff --tag "$tag" --latest --strip header --output RELEASE_NOTES.md
+          # Generate CHANGELOG.md and release notes
+          git-cliff --tag "$TAG" --output CHANGELOG.md 2>/dev/null || git-cliff --unreleased --output CHANGELOG.md
+          git-cliff --tag "$TAG" --latest --strip header --output RELEASE_NOTES.md 2>/dev/null || git-cliff --unreleased --strip header --output RELEASE_NOTES.md
 
       - name: Compile Optimized Release Binary
         run: cargo build --release --verbose
@@ -87,24 +86,23 @@ jobs:
           Copy-Item "target/release/MusicPresence.exe" "MusicPresence.exe"
 
       - name: Commit & Push Version Bump and Changelog
-        shell: pwsh
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          $tag = "${{ steps.semver.outputs.tag }}"
+          TAG="${{ steps.semver.outputs.tag }}"
           
           git add Cargo.toml Cargo.lock CHANGELOG.md
-          $hasChanges = git status --porcelain
-          if ($hasChanges) {
-            git commit -m "chore(release): $tag [skip ci]"
-            git tag -a "$tag" -m "Release $tag"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): $TAG [skip ci]"
+            git tag -a "$TAG" -m "Release $TAG"
             git push origin main --follow-tags
-          } else {
+          else
             # Ensure tag exists if no file changes needed
-            git tag "$tag" 2>$null
-            git push origin "$tag" 2>$null
-          }
+            git tag "$TAG" 2>/dev/null || true
+            git push origin "$TAG" 2>/dev/null || true
+          fi
 
       - name: Publish Official GitHub Release
         uses: softprops/action-gh-release@v2

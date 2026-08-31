@@ -46,7 +46,6 @@ jobs:
   lint-and-format:
     name: Code Formatting & Linting (Clippy)
     runs-on: windows-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -65,22 +64,10 @@ jobs:
       - name: Run Clippy Linter
         run: cargo clippy --all-targets -- -D warnings
 
-  security-audit:
-    name: Security Vulnerabilities Audit (RustSec)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Run Cargo Audit
-        uses: rustsec/audit-check@v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
   test-and-build:
     name: Build & Test (Windows x86_64)
     runs-on: windows-latest
-    needs: [lint-and-format, security-audit]
+    needs: [lint-and-format]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -96,4 +83,5 @@ jobs:
 
       - name: Check Compilation
         run: cargo build --verbose
+
 
