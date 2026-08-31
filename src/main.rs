@@ -23,9 +23,9 @@ fn main() {
     // Prevent multiple simultaneous instances on Windows
     #[cfg(windows)]
     unsafe {
-        use windows::core::w;
-        use windows::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS};
+        use windows::Win32::Foundation::{ERROR_ALREADY_EXISTS, GetLastError};
         use windows::Win32::System::Threading::CreateMutexW;
+        use windows::core::w;
 
         use windows::Win32::UI::WindowsAndMessaging::SetProcessDPIAware;
 
@@ -42,10 +42,10 @@ fn main() {
     }
 
     // Ensure correct working directory when launched via GUI/shortcut
-    if let Ok(exe_path) = env::current_exe() {
-        if let Some(parent) = exe_path.parent() {
-            let _ = env::set_current_dir(parent);
-        }
+    if let Ok(exe_path) = env::current_exe()
+        && let Some(parent) = exe_path.parent()
+    {
+        let _ = env::set_current_dir(parent);
     }
 
     // Clean up any temporary files from past updates
@@ -55,10 +55,11 @@ fn main() {
     let config = Arc::new(RwLock::new(Config::load_or_create("config.toml")));
 
     // Sync autostart registry state with config if enabled
-    if let Ok(cfg) = config.read() {
-        if cfg.auto_start && !autostart::is_autostart_enabled() {
-            let _ = autostart::set_autostart(true);
-        }
+    if let Ok(cfg) = config.read()
+        && cfg.auto_start
+        && !autostart::is_autostart_enabled()
+    {
+        let _ = autostart::set_autostart(true);
     }
 
     // Check for updates in background if auto-update is enabled

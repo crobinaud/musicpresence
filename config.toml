@@ -1,6 +1,7 @@
 client_id = "1046420605907501056"
 poll_interval_ms = 1500
 auto_start = true
+auto_update = true
 show_paused = true
 fetch_itunes_art = true
 enable_listen_button = true

@@ -84,7 +84,7 @@ pub fn check_for_updates() -> Result<Option<UpdateInfo>, String> {
         let exe_asset = release
             .assets
             .into_iter()
-            .find(|a| a.name.ends_with(".exe") || a.name == "AppleMusicPresence.exe")
+            .find(|a| a.name == "MusicPresence.exe" || a.name.ends_with(".exe"))
             .map(|a| a.browser_download_url);
 
         Ok(Some(UpdateInfo {
@@ -105,7 +105,7 @@ pub fn apply_update(download_url: &str) -> Result<(), String> {
         .parent()
         .ok_or_else(|| "Unable to locate application directory.".to_string())?;
 
-    let new_exe = parent_dir.join("AppleMusicPresence.exe.new");
+    let new_exe = parent_dir.join("MusicPresence.exe.new");
     let old_exe = current_exe.with_extension("exe.old");
 
     // Download the new binary

@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+echo "🔍 Checking code formatting (cargo fmt)..."
+cargo fmt -- --check
+
+echo "🔍 Running static analysis (cargo clippy)..."
+cargo clippy --all-targets -- -D warnings
+
+echo "🧪 Running unit and integration tests (cargo test)..."
+cargo test --quiet
+
+echo "✅ All local checks passed successfully!"

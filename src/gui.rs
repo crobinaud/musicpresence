@@ -5,26 +5,26 @@ use std::os::windows::ffi::OsStrExt;
 use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::thread;
-use windows::core::{w, PCWSTR};
 use windows::Win32::Foundation::{COLORREF, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM};
-use windows::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_USE_IMMERSIVE_DARK_MODE};
+use windows::Win32::Graphics::Dwm::{DWMWA_USE_IMMERSIVE_DARK_MODE, DwmSetWindowAttribute};
 use windows::Win32::Graphics::Gdi::{
-    CreateFontW, CreateSolidBrush, DeleteObject, SetBkColor, SetBkMode, SetTextColor,
-    CLEARTYPE_QUALITY, CLIP_DEFAULT_PRECIS, DEFAULT_CHARSET, FW_BOLD, FW_NORMAL, FW_SEMIBOLD,
-    HBRUSH, HDC, HFONT, OUT_DEFAULT_PRECIS, TRANSPARENT,
+    CLEARTYPE_QUALITY, CLIP_DEFAULT_PRECIS, CreateFontW, CreateSolidBrush, DEFAULT_CHARSET,
+    DeleteObject, FW_BOLD, FW_NORMAL, FW_SEMIBOLD, HBRUSH, HDC, HFONT, OUT_DEFAULT_PRECIS,
+    SetBkColor, SetBkMode, SetTextColor, TRANSPARENT,
 };
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW,
-    GetSystemMetrics, GetWindowLongPtrW, GetWindowTextLengthW, GetWindowTextW, MessageBoxW,
-    PostQuitMessage, RegisterClassW, SendMessageW, SetForegroundWindow, SetWindowLongPtrW,
-    SetWindowTextW, ShowWindow, BM_GETCHECK, BM_SETCHECK, BS_AUTOCHECKBOX, BS_DEFPUSHBUTTON,
-    BS_GROUPBOX, BS_PUSHBUTTON, ES_NUMBER, GWLP_USERDATA, MB_ICONINFORMATION, MB_ICONQUESTION,
-    MB_ICONWARNING, MB_OK, MB_YESNO, MSG, SM_CXSCREEN, SM_CYSCREEN, SW_RESTORE, SW_SHOW,
-    WINDOW_EX_STYLE, WINDOW_STYLE, WM_CLOSE, WM_COMMAND, WM_CTLCOLORBTN, WM_CTLCOLORDLG,
-    WM_CTLCOLOREDIT, WM_CTLCOLORSTATIC, WM_DESTROY, WM_SETFONT, WNDCLASSW, WS_BORDER, WS_CAPTION,
-    WS_CHILD, WS_EX_CLIENTEDGE, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
+    BM_GETCHECK, BM_SETCHECK, BS_AUTOCHECKBOX, BS_DEFPUSHBUTTON, BS_GROUPBOX, BS_PUSHBUTTON,
+    CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, ES_NUMBER, GWLP_USERDATA,
+    GetMessageW, GetSystemMetrics, GetWindowLongPtrW, GetWindowTextLengthW, GetWindowTextW,
+    MB_ICONINFORMATION, MB_ICONQUESTION, MB_ICONWARNING, MB_OK, MB_YESNO, MSG, MessageBoxW,
+    PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SW_RESTORE, SW_SHOW, SendMessageW,
+    SetForegroundWindow, SetWindowLongPtrW, SetWindowTextW, ShowWindow, WINDOW_EX_STYLE,
+    WINDOW_STYLE, WM_CLOSE, WM_COMMAND, WM_CTLCOLORBTN, WM_CTLCOLORDLG, WM_CTLCOLOREDIT,
+    WM_CTLCOLORSTATIC, WM_DESTROY, WM_SETFONT, WNDCLASSW, WS_BORDER, WS_CAPTION, WS_CHILD,
+    WS_EX_CLIENTEDGE, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
 };
+use windows::core::{PCWSTR, w};
 
 static SETTINGS_HWND: AtomicIsize = AtomicIsize::new(0);
 
@@ -248,446 +248,489 @@ fn run_settings_gui(config: Arc<RwLock<Config>>) {
 }
 
 unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HINSTANCE) {
-    let cfg = match ctx.config.read() {
-        Ok(c) => c.clone(),
-        Err(_) => Config::default(),
-    };
+    unsafe {
+        let cfg = match ctx.config.read() {
+            Ok(c) => c.clone(),
+            Err(_) => Config::default(),
+        };
 
-    // Header Title
-    let title_text = to_wstring("Music Presence");
-    let h_title = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("STATIC"),
-        PCWSTR(title_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
-        22,
-        16,
-        150,
-        24,
-        parent,
-        None,
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_title,
-        WM_SETFONT,
-        WPARAM(ctx.font_title.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Header Title
+        let title_text = to_wstring("Music Presence");
+        let h_title = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("STATIC"),
+            PCWSTR(title_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
+            22,
+            16,
+            150,
+            24,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_title,
+            WM_SETFONT,
+            WPARAM(ctx.font_title.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Version Badge
-    let ver_text = to_wstring(&format!("v{}", CURRENT_VERSION));
-    let h_ver = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("STATIC"),
-        PCWSTR(ver_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
-        175,
-        21,
-        120,
-        18,
-        parent,
-        None,
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_ver,
-        WM_SETFONT,
-        WPARAM(ctx.font_badge.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Version Badge
+        let ver_text = to_wstring(&format!("v{}", CURRENT_VERSION));
+        let h_ver = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("STATIC"),
+            PCWSTR(ver_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
+            175,
+            21,
+            120,
+            18,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_ver,
+            WM_SETFONT,
+            WPARAM(ctx.font_badge.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Header Subtitle
-    let sub_text = to_wstring("Apple Music Discord Rich Presence Settings");
-    let h_sub = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("STATIC"),
-        PCWSTR(sub_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
-        22,
-        42,
-        370,
-        18,
-        parent,
-        None,
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_sub,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Header Subtitle
+        let sub_text = to_wstring("Apple Music Discord Rich Presence Settings");
+        let h_sub = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("STATIC"),
+            PCWSTR(sub_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
+            22,
+            42,
+            370,
+            18,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_sub,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Group Box: Preferences
-    let grp_text = to_wstring(" Preferences ");
-    let h_grp = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("BUTTON"),
-        PCWSTR(grp_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WINDOW_STYLE(BS_GROUPBOX as u32),
-        18,
-        68,
-        378,
-        218,
-        parent,
-        None,
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_grp,
-        WM_SETFONT,
-        WPARAM(ctx.font_bold.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Group Box: Preferences
+        let grp_text = to_wstring(" Preferences ");
+        let h_grp = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("BUTTON"),
+            PCWSTR(grp_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(BS_GROUPBOX as u32),
+            18,
+            68,
+            378,
+            218,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_grp,
+            WM_SETFONT,
+            WPARAM(ctx.font_bold.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Label: Polling interval
-    let lbl_poll = to_wstring("Refresh interval (milliseconds):");
-    let h_lbl_poll = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("STATIC"),
-        PCWSTR(lbl_poll.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
-        32,
-        92,
-        260,
-        18,
-        parent,
-        None,
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_lbl_poll,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Label: Polling interval
+        let lbl_poll = to_wstring("Refresh interval (milliseconds):");
+        let h_lbl_poll = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("STATIC"),
+            PCWSTR(lbl_poll.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
+            32,
+            92,
+            260,
+            18,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_lbl_poll,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Edit: Polling interval
-    let poll_val = to_wstring(&cfg.poll_interval_ms.to_string());
-    let h_edit_poll = CreateWindowExW(
-        WS_EX_CLIENTEDGE,
-        w!("EDIT"),
-        PCWSTR(poll_val.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | WINDOW_STYLE(ES_NUMBER as u32),
-        32,
-        114,
-        120,
-        24,
-        parent,
-        windows::Win32::UI::WindowsAndMessaging::HMENU(ID_EDIT_POLL_INTERVAL as *mut _),
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_edit_poll,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
-    ctx.hwnd_poll_interval = h_edit_poll;
+        // Edit: Polling interval
+        let poll_val = to_wstring(&cfg.poll_interval_ms.to_string());
+        let h_edit_poll = CreateWindowExW(
+            WS_EX_CLIENTEDGE,
+            w!("EDIT"),
+            PCWSTR(poll_val.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | WINDOW_STYLE(ES_NUMBER as u32),
+            32,
+            114,
+            120,
+            24,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_EDIT_POLL_INTERVAL as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_edit_poll,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
+        ctx.hwnd_poll_interval = h_edit_poll;
 
-    // Helper text
-    let help_text = to_wstring("(default: 1500 ms, min: 200 ms).");
-    let h_lbl_help = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("STATIC"),
-        PCWSTR(help_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
-        162,
-        118,
-        210,
-        18,
-        parent,
-        None,
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_lbl_help,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Helper text
+        let help_text = to_wstring("(default: 1500 ms, min: 200 ms).");
+        let h_lbl_help = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("STATIC"),
+            PCWSTR(help_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
+            162,
+            118,
+            210,
+            18,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_lbl_help,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Checkbox: Launch on system startup
-    let chk_autostart_text = to_wstring("Start Music Presence on Windows startup");
-    let h_chk_autostart = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("BUTTON"),
-        PCWSTR(chk_autostart_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
-        32,
-        152,
-        340,
-        22,
-        parent,
-        windows::Win32::UI::WindowsAndMessaging::HMENU(ID_CHK_AUTOSTART as *mut _),
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_chk_autostart,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Checkbox: Launch on system startup
+        let chk_autostart_text = to_wstring("Start Music Presence on Windows startup");
+        let h_chk_autostart = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("BUTTON"),
+            PCWSTR(chk_autostart_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
+            32,
+            152,
+            340,
+            22,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_CHK_AUTOSTART as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_chk_autostart,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    let is_autostart = cfg.auto_start || crate::autostart::is_autostart_enabled();
-    let _ = SendMessageW(
-        h_chk_autostart,
-        BM_SETCHECK,
-        WPARAM(if is_autostart {
-            BST_CHECKED
-        } else {
-            BST_UNCHECKED
-        }),
-        LPARAM(0),
-    );
-    ctx.hwnd_autostart = h_chk_autostart;
+        let is_autostart = cfg.auto_start || crate::autostart::is_autostart_enabled();
+        let _ = SendMessageW(
+            h_chk_autostart,
+            BM_SETCHECK,
+            WPARAM(if is_autostart {
+                BST_CHECKED
+            } else {
+                BST_UNCHECKED
+            }),
+            LPARAM(0),
+        );
+        ctx.hwnd_autostart = h_chk_autostart;
 
-    // Checkbox: Automatically check for updates
-    let chk_autoupdate_text = to_wstring("Automatically check for updates on startup");
-    let h_chk_autoupdate = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("BUTTON"),
-        PCWSTR(chk_autoupdate_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
-        32,
-        182,
-        340,
-        22,
-        parent,
-        windows::Win32::UI::WindowsAndMessaging::HMENU(ID_CHK_AUTOUPDATE as *mut _),
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_chk_autoupdate,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Checkbox: Automatically check for updates
+        let chk_autoupdate_text = to_wstring("Automatically check for updates on startup");
+        let h_chk_autoupdate = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("BUTTON"),
+            PCWSTR(chk_autoupdate_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
+            32,
+            182,
+            340,
+            22,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_CHK_AUTOUPDATE as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_chk_autoupdate,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    let _ = SendMessageW(
-        h_chk_autoupdate,
-        BM_SETCHECK,
-        WPARAM(if cfg.auto_update {
-            BST_CHECKED
-        } else {
-            BST_UNCHECKED
-        }),
-        LPARAM(0),
-    );
-    ctx.hwnd_autoupdate = h_chk_autoupdate;
+        let _ = SendMessageW(
+            h_chk_autoupdate,
+            BM_SETCHECK,
+            WPARAM(if cfg.auto_update {
+                BST_CHECKED
+            } else {
+                BST_UNCHECKED
+            }),
+            LPARAM(0),
+        );
+        ctx.hwnd_autoupdate = h_chk_autoupdate;
 
-    // Button: Check for updates
-    let btn_check_text = to_wstring("Check for Updates");
-    let h_btn_check = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("BUTTON"),
-        PCWSTR(btn_check_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
-        32,
-        218,
-        140,
-        28,
-        parent,
-        windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_CHECK_UPDATE as *mut _),
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_btn_check,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Button: Check for updates
+        let btn_check_text = to_wstring("Check for Updates");
+        let h_btn_check = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("BUTTON"),
+            PCWSTR(btn_check_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
+            32,
+            218,
+            140,
+            28,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_CHECK_UPDATE as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_btn_check,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Bottom Buttons
-    // Reset to defaults
-    let btn_reset_text = to_wstring("Default");
-    let h_btn_reset = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("BUTTON"),
-        PCWSTR(btn_reset_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
-        18,
-        304,
-        84,
-        28,
-        parent,
-        windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_RESET as *mut _),
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_btn_reset,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Bottom Buttons
+        // Reset to defaults
+        let btn_reset_text = to_wstring("Default");
+        let h_btn_reset = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("BUTTON"),
+            PCWSTR(btn_reset_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
+            18,
+            304,
+            84,
+            28,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_RESET as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_btn_reset,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Cancel
-    let btn_cancel_text = to_wstring("Cancel");
-    let h_btn_cancel = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("BUTTON"),
-        PCWSTR(btn_cancel_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
-        216,
-        304,
-        84,
-        28,
-        parent,
-        windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_CANCEL as *mut _),
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_btn_cancel,
-        WM_SETFONT,
-        WPARAM(ctx.font_regular.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Cancel
+        let btn_cancel_text = to_wstring("Cancel");
+        let h_btn_cancel = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("BUTTON"),
+            PCWSTR(btn_cancel_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
+            216,
+            304,
+            84,
+            28,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_CANCEL as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_btn_cancel,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
 
-    // Save
-    let btn_save_text = to_wstring("Save");
-    let h_btn_save = CreateWindowExW(
-        WINDOW_EX_STYLE(0),
-        w!("BUTTON"),
-        PCWSTR(btn_save_text.as_ptr()),
-        WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_DEFPUSHBUTTON as u32),
-        312,
-        304,
-        84,
-        28,
-        parent,
-        windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_SAVE as *mut _),
-        hinstance,
-        None,
-    )
-    .unwrap_or_default();
-    SendMessageW(
-        h_btn_save,
-        WM_SETFONT,
-        WPARAM(ctx.font_bold.0 as isize as usize),
-        LPARAM(1),
-    );
+        // Save
+        let btn_save_text = to_wstring("Save");
+        let h_btn_save = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("BUTTON"),
+            PCWSTR(btn_save_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_DEFPUSHBUTTON as u32),
+            312,
+            304,
+            84,
+            28,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_BTN_SAVE as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_btn_save,
+            WM_SETFONT,
+            WPARAM(ctx.font_bold.0 as isize as usize),
+            LPARAM(1),
+        );
+    }
 }
 
 unsafe fn get_window_text_string(hwnd: HWND) -> String {
-    let len = GetWindowTextLengthW(hwnd);
-    if len <= 0 {
-        return String::new();
+    unsafe {
+        let len = GetWindowTextLengthW(hwnd);
+        if len <= 0 {
+            return String::new();
+        }
+        let mut buf = vec![0u16; (len + 1) as usize];
+        GetWindowTextW(hwnd, &mut buf);
+        if let Some(pos) = buf.iter().position(|&c| c == 0) {
+            buf.truncate(pos);
+        }
+        String::from_utf16_lossy(&buf)
     }
-    let mut buf = vec![0u16; (len + 1) as usize];
-    GetWindowTextW(hwnd, &mut buf);
-    if let Some(pos) = buf.iter().position(|&c| c == 0) {
-        buf.truncate(pos);
-    }
-    String::from_utf16_lossy(&buf)
 }
 
 unsafe fn trigger_manual_update_check(hwnd: HWND) {
-    match updater::check_for_updates() {
-        Ok(Some(info)) => {
-            let msg = to_wstring(&format!(
-                "A new version is available!\n\n• Current version: v{}\n• Latest version: v{}\n\nWould you like to download and install this update automatically?",
-                info.current_version, info.latest_version
-            ));
-            let title_avail = to_wstring("Update Available");
-            let res = MessageBoxW(
-                hwnd,
-                PCWSTR(msg.as_ptr()),
-                PCWSTR(title_avail.as_ptr()),
-                MB_YESNO | MB_ICONQUESTION,
-            );
+    unsafe {
+        match updater::check_for_updates() {
+            Ok(Some(info)) => {
+                let msg = to_wstring(&format!(
+                    "A new version is available!\n\n• Current version: v{}\n• Latest version: v{}\n\nWould you like to download and install this update automatically?",
+                    info.current_version, info.latest_version
+                ));
+                let title_avail = to_wstring("Update Available");
+                let res = MessageBoxW(
+                    hwnd,
+                    PCWSTR(msg.as_ptr()),
+                    PCWSTR(title_avail.as_ptr()),
+                    MB_YESNO | MB_ICONQUESTION,
+                );
 
-            if res.0 == IDYES {
-                if let Some(download_url) = info.download_url {
-                    // Apply self update
-                    match updater::apply_update(&download_url) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            let err_msg = to_wstring(&format!("Failed to install update:\n{}\n\nYou can manually download it from:\n{}", e, info.release_url));
-                            let err_title = to_wstring("Update Error");
-                            MessageBoxW(
-                                hwnd,
-                                PCWSTR(err_msg.as_ptr()),
-                                PCWSTR(err_title.as_ptr()),
-                                MB_OK | MB_ICONWARNING,
-                            );
+                if res.0 == IDYES {
+                    if let Some(download_url) = info.download_url {
+                        // Apply self update
+                        match updater::apply_update(&download_url) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                let err_msg = to_wstring(&format!(
+                                    "Failed to install update:\n{}\n\nYou can manually download it from:\n{}",
+                                    e, info.release_url
+                                ));
+                                let err_title = to_wstring("Update Error");
+                                MessageBoxW(
+                                    hwnd,
+                                    PCWSTR(err_msg.as_ptr()),
+                                    PCWSTR(err_title.as_ptr()),
+                                    MB_OK | MB_ICONWARNING,
+                                );
+                            }
                         }
+                    } else {
+                        let info_msg = to_wstring(&format!(
+                            "The new update is available on GitHub:\n{}",
+                            info.release_url
+                        ));
+                        let info_title = to_wstring("Release Page");
+                        MessageBoxW(
+                            hwnd,
+                            PCWSTR(info_msg.as_ptr()),
+                            PCWSTR(info_title.as_ptr()),
+                            MB_OK | MB_ICONINFORMATION,
+                        );
                     }
-                } else {
-                    let info_msg = to_wstring(&format!(
-                        "The new update is available on GitHub:\n{}",
-                        info.release_url
-                    ));
-                    let info_title = to_wstring("Release Page");
-                    MessageBoxW(
-                        hwnd,
-                        PCWSTR(info_msg.as_ptr()),
-                        PCWSTR(info_title.as_ptr()),
-                        MB_OK | MB_ICONINFORMATION,
-                    );
                 }
             }
-        }
-        Ok(None) => {
-            let msg = to_wstring(&format!(
-                "You are using the latest version of Music Presence (v{}).",
-                CURRENT_VERSION
-            ));
-            let title_ok = to_wstring("Up to Date");
-            MessageBoxW(
-                hwnd,
-                PCWSTR(msg.as_ptr()),
-                PCWSTR(title_ok.as_ptr()),
-                MB_OK | MB_ICONINFORMATION,
-            );
-        }
-        Err(e) => {
-            let msg = to_wstring(&format!(
-                "Could not check for updates:\n{}\n\nPlease verify your internet connection.",
-                e
-            ));
-            let title_err = to_wstring("Update Check Failed");
-            MessageBoxW(
-                hwnd,
-                PCWSTR(msg.as_ptr()),
-                PCWSTR(title_err.as_ptr()),
-                MB_OK | MB_ICONWARNING,
-            );
+            Ok(None) => {
+                let msg = to_wstring(&format!(
+                    "You are using the latest version of Music Presence (v{}).",
+                    CURRENT_VERSION
+                ));
+                let title_ok = to_wstring("Up to Date");
+                MessageBoxW(
+                    hwnd,
+                    PCWSTR(msg.as_ptr()),
+                    PCWSTR(title_ok.as_ptr()),
+                    MB_OK | MB_ICONINFORMATION,
+                );
+            }
+            Err(e) => {
+                let msg = to_wstring(&format!(
+                    "Could not check for updates:\n{}\n\nPlease verify your internet connection.",
+                    e
+                ));
+                let title_err = to_wstring("Update Check Failed");
+                MessageBoxW(
+                    hwnd,
+                    PCWSTR(msg.as_ptr()),
+                    PCWSTR(title_err.as_ptr()),
+                    MB_OK | MB_ICONWARNING,
+                );
+            }
         }
     }
 }
 
 unsafe fn save_settings(ctx: &SettingsContext) -> bool {
-    let poll_str = get_window_text_string(ctx.hwnd_poll_interval);
-    let poll_interval_ms: u64 = match poll_str.trim().parse::<u64>() {
-        Ok(v) if v >= 200 => v,
-        _ => {
-            let msg = to_wstring("Please enter a valid refresh interval (minimum: 200 ms).");
-            let title = to_wstring("Invalid Value");
+    unsafe {
+        let poll_str = get_window_text_string(ctx.hwnd_poll_interval);
+        let poll_interval_ms: u64 = match poll_str.trim().parse::<u64>() {
+            Ok(v) if v >= 200 => v,
+            _ => {
+                let msg = to_wstring("Please enter a valid refresh interval (minimum: 200 ms).");
+                let title = to_wstring("Invalid Value");
+                MessageBoxW(
+                    ctx.hwnd,
+                    PCWSTR(msg.as_ptr()),
+                    PCWSTR(title.as_ptr()),
+                    MB_OK | MB_ICONWARNING,
+                );
+                return false;
+            }
+        };
+
+        let auto_start = SendMessageW(ctx.hwnd_autostart, BM_GETCHECK, WPARAM(0), LPARAM(0)).0
+            as usize
+            == BST_CHECKED;
+        let auto_update = SendMessageW(ctx.hwnd_autoupdate, BM_GETCHECK, WPARAM(0), LPARAM(0)).0
+            as usize
+            == BST_CHECKED;
+
+        let mut current_config = match ctx.config.read() {
+            Ok(c) => c.clone(),
+            Err(_) => Config::default(),
+        };
+
+        current_config.poll_interval_ms = poll_interval_ms;
+        current_config.auto_start = auto_start;
+        current_config.auto_update = auto_update;
+
+        // Apply startup registry setting
+        let _ = crate::autostart::set_autostart(auto_start);
+
+        // Save to config.toml
+        if let Err(e) = current_config.save("config.toml") {
+            let msg = to_wstring(&format!("Failed to save config.toml: {}", e));
+            let title = to_wstring("Error");
             MessageBoxW(
                 ctx.hwnd,
                 PCWSTR(msg.as_ptr()),
@@ -696,67 +739,38 @@ unsafe fn save_settings(ctx: &SettingsContext) -> bool {
             );
             return false;
         }
-    };
 
-    let auto_start = SendMessageW(ctx.hwnd_autostart, BM_GETCHECK, WPARAM(0), LPARAM(0)).0 as usize
-        == BST_CHECKED;
-    let auto_update = SendMessageW(ctx.hwnd_autoupdate, BM_GETCHECK, WPARAM(0), LPARAM(0)).0
-        as usize
-        == BST_CHECKED;
+        // Update in-memory config
+        if let Ok(mut cfg_guard) = ctx.config.write() {
+            *cfg_guard = current_config;
+        }
 
-    let mut current_config = match ctx.config.read() {
-        Ok(c) => c.clone(),
-        Err(_) => Config::default(),
-    };
-
-    current_config.poll_interval_ms = poll_interval_ms;
-    current_config.auto_start = auto_start;
-    current_config.auto_update = auto_update;
-
-    // Apply startup registry setting
-    let _ = crate::autostart::set_autostart(auto_start);
-
-    // Save to config.toml
-    if let Err(e) = current_config.save("config.toml") {
-        let msg = to_wstring(&format!("Failed to save config.toml: {}", e));
-        let title = to_wstring("Error");
-        MessageBoxW(
-            ctx.hwnd,
-            PCWSTR(msg.as_ptr()),
-            PCWSTR(title.as_ptr()),
-            MB_OK | MB_ICONWARNING,
-        );
-        return false;
+        true
     }
-
-    // Update in-memory config
-    if let Ok(mut cfg_guard) = ctx.config.write() {
-        *cfg_guard = current_config;
-    }
-
-    true
 }
 
 unsafe fn reset_to_defaults(ctx: &SettingsContext) {
-    let def = Config::default();
-    let poll_w = to_wstring(&def.poll_interval_ms.to_string());
-    let _ = SetWindowTextW(ctx.hwnd_poll_interval, PCWSTR(poll_w.as_ptr()));
-    let _ = SendMessageW(
-        ctx.hwnd_autostart,
-        BM_SETCHECK,
-        WPARAM(BST_UNCHECKED),
-        LPARAM(0),
-    );
-    let _ = SendMessageW(
-        ctx.hwnd_autoupdate,
-        BM_SETCHECK,
-        WPARAM(if def.auto_update {
-            BST_CHECKED
-        } else {
-            BST_UNCHECKED
-        }),
-        LPARAM(0),
-    );
+    unsafe {
+        let def = Config::default();
+        let poll_w = to_wstring(&def.poll_interval_ms.to_string());
+        let _ = SetWindowTextW(ctx.hwnd_poll_interval, PCWSTR(poll_w.as_ptr()));
+        let _ = SendMessageW(
+            ctx.hwnd_autostart,
+            BM_SETCHECK,
+            WPARAM(BST_UNCHECKED),
+            LPARAM(0),
+        );
+        let _ = SendMessageW(
+            ctx.hwnd_autoupdate,
+            BM_SETCHECK,
+            WPARAM(if def.auto_update {
+                BST_CHECKED
+            } else {
+                BST_UNCHECKED
+            }),
+            LPARAM(0),
+        );
+    }
 }
 
 unsafe extern "system" fn settings_wnd_proc(
@@ -765,65 +779,67 @@ unsafe extern "system" fn settings_wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut SettingsContext;
+    unsafe {
+        let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut SettingsContext;
 
-    match msg {
-        WM_CTLCOLORSTATIC | WM_CTLCOLORDLG | WM_CTLCOLORBTN => {
-            if !ptr.is_null() {
-                let ctx = &*ptr;
-                let hdc = HDC(wparam.0 as *mut _);
-                SetBkMode(hdc, TRANSPARENT);
-                SetTextColor(hdc, COLORREF(0x00222222));
-                return LRESULT(ctx.bg_brush.0 as isize);
-            }
-        }
-        WM_CTLCOLOREDIT => {
-            if !ptr.is_null() {
-                let ctx = &*ptr;
-                let hdc = HDC(wparam.0 as *mut _);
-                SetBkColor(hdc, COLORREF(0x00FFFFFF));
-                SetTextColor(hdc, COLORREF(0x00111111));
-                return LRESULT(ctx.edit_brush.0 as isize);
-            }
-        }
-        WM_COMMAND => {
-            let id = wparam.0 & 0xFFFF;
-            if !ptr.is_null() {
-                let ctx = &*ptr;
-                match id {
-                    ID_BTN_CHECK_UPDATE => {
-                        trigger_manual_update_check(hwnd);
-                        return LRESULT(0);
-                    }
-                    ID_BTN_SAVE => {
-                        if save_settings(ctx) {
-                            let _ = DestroyWindow(hwnd);
-                        }
-                        return LRESULT(0);
-                    }
-                    ID_BTN_CANCEL => {
-                        let _ = DestroyWindow(hwnd);
-                        return LRESULT(0);
-                    }
-                    ID_BTN_RESET => {
-                        reset_to_defaults(ctx);
-                        return LRESULT(0);
-                    }
-                    _ => {}
+        match msg {
+            WM_CTLCOLORSTATIC | WM_CTLCOLORDLG | WM_CTLCOLORBTN => {
+                if !ptr.is_null() {
+                    let ctx = &*ptr;
+                    let hdc = HDC(wparam.0 as *mut _);
+                    SetBkMode(hdc, TRANSPARENT);
+                    SetTextColor(hdc, COLORREF(0x00222222));
+                    return LRESULT(ctx.bg_brush.0 as isize);
                 }
             }
+            WM_CTLCOLOREDIT => {
+                if !ptr.is_null() {
+                    let ctx = &*ptr;
+                    let hdc = HDC(wparam.0 as *mut _);
+                    SetBkColor(hdc, COLORREF(0x00FFFFFF));
+                    SetTextColor(hdc, COLORREF(0x00111111));
+                    return LRESULT(ctx.edit_brush.0 as isize);
+                }
+            }
+            WM_COMMAND => {
+                let id = wparam.0 & 0xFFFF;
+                if !ptr.is_null() {
+                    let ctx = &*ptr;
+                    match id {
+                        ID_BTN_CHECK_UPDATE => {
+                            trigger_manual_update_check(hwnd);
+                            return LRESULT(0);
+                        }
+                        ID_BTN_SAVE => {
+                            if save_settings(ctx) {
+                                let _ = DestroyWindow(hwnd);
+                            }
+                            return LRESULT(0);
+                        }
+                        ID_BTN_CANCEL => {
+                            let _ = DestroyWindow(hwnd);
+                            return LRESULT(0);
+                        }
+                        ID_BTN_RESET => {
+                            reset_to_defaults(ctx);
+                            return LRESULT(0);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            WM_CLOSE => {
+                let _ = DestroyWindow(hwnd);
+                return LRESULT(0);
+            }
+            WM_DESTROY => {
+                SETTINGS_HWND.store(0, Ordering::SeqCst);
+                PostQuitMessage(0);
+                return LRESULT(0);
+            }
+            _ => {}
         }
-        WM_CLOSE => {
-            let _ = DestroyWindow(hwnd);
-            return LRESULT(0);
-        }
-        WM_DESTROY => {
-            SETTINGS_HWND.store(0, Ordering::SeqCst);
-            PostQuitMessage(0);
-            return LRESULT(0);
-        }
-        _ => {}
-    }
 
-    DefWindowProcW(hwnd, msg, wparam, lparam)
+        DefWindowProcW(hwnd, msg, wparam, lparam)
+    }
 }

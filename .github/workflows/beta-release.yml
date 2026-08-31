@@ -1,0 +1,63 @@
+name: CD - Beta Pre-Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_note:
+        description: "Release summary for this Beta"
+        required: false
+        default: "Automated rolling pre-release build from develop branch."
+
+concurrency:
+  group: cd-beta-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish-beta:
+    name: Package & Publish Beta Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain (Stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Tests
+        run: cargo test --verbose
+
+      - name: Compile Optimized Release Binary
+        run: cargo build --release --verbose
+
+      - name: Prepare Release Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "release-package" -Force | Out-Null
+          Copy-Item "target/release/MusicPresence.exe" "release-package/MusicPresence.exe"
+          Copy-Item "config.toml" "release-package/config.toml"
+          Copy-Item "README.md" "release-package/README.md"
+          
+          Compress-Archive -Path "release-package/*" -DestinationPath "MusicPresence-windows-x64.zip" -Force
+          Copy-Item "target/release/MusicPresence.exe" "MusicPresence.exe"
+
+      - name: Publish Beta Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: beta
+          name: "MusicPresence Beta (Develop)"
+          body: ${{ github.event.inputs.release_note || 'Automated rolling pre-release build from develop branch.' }}
+          prerelease: true
+          make_latest: false
+          files: |
+            MusicPresence.exe
+            MusicPresence-windows-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

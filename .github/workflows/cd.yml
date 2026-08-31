@@ -1,0 +1,121 @@
+name: CD - Production Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: cd-production-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  semantic-release-and-publish:
+    name: Semantic Versioning, Changelog & Publish Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Rust Toolchain (Stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Tests
+        run: cargo test --verbose
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
+      - name: Determine Next Semantic Version
+        id: semver
+        shell: pwsh
+        run: |
+          # Calculate next SemVer based on conventional commits
+          $rawNext = git-cliff --bumped-version 2>&1
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($rawNext)) {
+            Write-Host "No tag found or no bump detected, defaulting to current Cargo.toml version."
+            $currentVer = (Get-Content Cargo.toml | Select-String '^version = "(.*)"').Matches.Groups[1].Value
+            $nextTag = "v$currentVer"
+            $nextVersion = "$currentVer"
+          } else {
+            $nextTag = $rawNext.Trim()
+            $nextVersion = $nextTag.TrimStart('v')
+          }
+          
+          Write-Host "Next version: $nextVersion (Tag: $nextTag)"
+          "version=$nextVersion" >> $env:GITHUB_OUTPUT
+          "tag=$nextTag" >> $env:GITHUB_OUTPUT
+
+      - name: Update Cargo.toml & CHANGELOG.md
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.semver.outputs.version }}"
+          $tag = "${{ steps.semver.outputs.tag }}"
+          
+          # Update version in Cargo.toml
+          (Get-Content Cargo.toml) -replace '^version = ".*"', "version = `"$ver`"" | Set-Content Cargo.toml
+          
+          # Generate full CHANGELOG.md and release notes
+          git-cliff --tag "$tag" --output CHANGELOG.md
+          git-cliff --tag "$tag" --latest --strip header --output RELEASE_NOTES.md
+
+      - name: Compile Optimized Release Binary
+        run: cargo build --release --verbose
+
+      - name: Prepare Release Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "release-package" -Force | Out-Null
+          Copy-Item "target/release/MusicPresence.exe" "release-package/MusicPresence.exe"
+          Copy-Item "config.toml" "release-package/config.toml"
+          Copy-Item "README.md" "release-package/README.md"
+          Copy-Item "CHANGELOG.md" "release-package/CHANGELOG.md"
+          
+          Compress-Archive -Path "release-package/*" -DestinationPath "MusicPresence-windows-x64.zip" -Force
+          Copy-Item "target/release/MusicPresence.exe" "MusicPresence.exe"
+
+      - name: Commit & Push Version Bump and Changelog
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          $tag = "${{ steps.semver.outputs.tag }}"
+          
+          git add Cargo.toml Cargo.lock CHANGELOG.md
+          $hasChanges = git status --porcelain
+          if ($hasChanges) {
+            git commit -m "chore(release): $tag [skip ci]"
+            git tag -a "$tag" -m "Release $tag"
+            git push origin main --follow-tags
+          } else {
+            # Ensure tag exists if no file changes needed
+            git tag "$tag" 2>$null
+            git push origin "$tag" 2>$null
+          }
+
+      - name: Publish Official GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semver.outputs.tag }}
+          name: "MusicPresence ${{ steps.semver.outputs.tag }}"
+          body_path: RELEASE_NOTES.md
+          prerelease: false
+          make_latest: true
+          files: |
+            MusicPresence.exe
+            MusicPresence-windows-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

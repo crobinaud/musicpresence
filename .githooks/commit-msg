@@ -1,0 +1,29 @@
+#!/bin/sh
+# Conventional Commits Validator Hook
+# Checks that the commit message follows: <type>(<scope>): <subject>
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(head -n 1 "$COMMIT_MSG_FILE")
+
+# Allow merge commits and automated release commits
+if echo "$COMMIT_MSG" | grep -qE "^(Merge|chore\(release\):|Revert )"; then
+    exit 0
+fi
+
+# Regex for Conventional Commits
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_-]+\))?!?: .+$"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+    echo "❌ [Git Hook] Invalid commit message format!"
+    echo "   Your message: \"$COMMIT_MSG\""
+    echo ""
+    echo "   Commit messages must follow the Conventional Commits specification:"
+    echo "   <type>(<scope>): <description>"
+    echo ""
+    echo "   Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+    echo "   Examples:"
+    echo "     feat(discord): add volume slider"
+    echo "     fix(tray): resolve tooltip freeze"
+    echo "     chore: update dependencies"
+    exit 1
+fi

@@ -47,12 +47,11 @@ impl MediaManager {
 
     /// Fetches currently playing media information from Apple Music or active media session
     pub fn get_current_track(&mut self, filter_apple_music: bool) -> Option<TrackInfo> {
-        if self.manager.is_none() {
-            if let Ok(op) = GlobalSystemMediaTransportControlsSessionManager::RequestAsync() {
-                if let Ok(mgr) = op.get() {
-                    self.manager = Some(mgr);
-                }
-            }
+        if self.manager.is_none()
+            && let Ok(op) = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+            && let Ok(mgr) = op.get()
+        {
+            self.manager = Some(mgr);
         }
 
         let mgr = self.manager.as_ref()?;
@@ -79,10 +78,11 @@ impl MediaManager {
             }
         }
 
-        if target_session.is_none() && !filter_apple_music {
-            if let Ok(current) = mgr.GetCurrentSession() {
-                target_session = Some(current);
-            }
+        if target_session.is_none()
+            && !filter_apple_music
+            && let Ok(current) = mgr.GetCurrentSession()
+        {
+            target_session = Some(current);
         }
 
         let session = target_session?;

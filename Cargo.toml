@@ -1,16 +1,20 @@
 [package]
 name = "musicpresence"
 version = "1.0.0"
-edition = "2021"
+edition = "2024"
 authors = ["Cyprien ROBINAUD"]
-description = "Apple Music Discord Rich Presence in pure optimized Rust"
+description = "Lightweight and elegant Apple Music Discord Rich Presence. Real-time playback, HD album art, and native performance built in pure Rust."
+
+[[bin]]
+name = "MusicPresence"
+path = "src/main.rs"
+
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 toml = "0.8"
 ureq = { version = "2.10", features = ["json", "tls"] }
-colored = "2.2"
 windows = { version = "0.58", features = [
     "Media_Control",
     "Foundation",
@@ -25,7 +29,6 @@ windows = { version = "0.58", features = [
     "Win32_Graphics_Dwm",
     "Win32_System_Registry",
 ] }
-tray-item = "0.10.0"
 
 [profile.release]
 opt-level = 3

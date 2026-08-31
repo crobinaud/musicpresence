@@ -118,15 +118,14 @@ impl DiscordIpc {
                     Err(e) => return Err(e.to_string()),
                 };
 
-                if Self::write_frame(&mut file, 0, &payload).is_ok() {
-                    // Read handshake response
-                    if let Ok((opcode, resp)) = Self::read_frame(&mut file) {
-                        if opcode == 1 && resp.contains("READY") {
-                            self.pipe = Some(file);
-                            self.is_connected = true;
-                            return Ok(());
-                        }
-                    }
+                if Self::write_frame(&mut file, 0, &payload).is_ok()
+                    && let Ok((opcode, resp)) = Self::read_frame(&mut file)
+                    && opcode == 1
+                    && resp.contains("READY")
+                {
+                    self.pipe = Some(file);
+                    self.is_connected = true;
+                    return Ok(());
                 }
             }
         }
