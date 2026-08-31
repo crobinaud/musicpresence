@@ -1,8 +1,8 @@
+use crate::config::Config;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
-use std::process::Command;
 use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 use windows::core::{w, PCWSTR};
 use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, POINT, WPARAM};
@@ -17,7 +17,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     DestroyMenu, DestroyWindow, DispatchMessageW, GetCursorPos, GetMessageW, GetWindowLongPtrW,
     KillTimer, LoadIconW, PostMessageW, PostQuitMessage, RegisterClassW, RegisterWindowMessageW,
     SetForegroundWindow, SetTimer, SetWindowLongPtrW, TrackPopupMenu, GWLP_USERDATA, HICON,
-    ICONINFO, IDI_APPLICATION, MF_STRING, MSG, TPM_BOTTOMALIGN, TPM_LEFTALIGN,
+    ICONINFO, IDI_APPLICATION, MF_SEPARATOR, MF_STRING, MSG, TPM_BOTTOMALIGN, TPM_LEFTALIGN,
     TPM_RETURNCMD, TPM_RIGHTBUTTON, WINDOW_EX_STYLE, WM_CONTEXTMENU, WM_DESTROY,
     WM_LBUTTONDBLCLK, WM_LBUTTONUP, WM_NULL, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_TIMER, WM_USER,
     WNDCLASSW, WS_OVERLAPPEDWINDOW,
@@ -34,6 +34,7 @@ struct TrayContext {
     nid: NOTIFYICONDATAW,
     status_text: Arc<Mutex<String>>,
     should_exit: Arc<AtomicBool>,
+    config: Arc<RwLock<Config>>,
     custom_icon: Option<HICON>,
     taskbar_created_msg: u32,
     is_added: bool,
@@ -46,7 +47,7 @@ pub struct TrayIcon {
 }
 
 impl TrayIcon {
-    pub fn new() -> Self {
+    pub fn new(config: Arc<RwLock<Config>>) -> Self {
         let should_exit = Arc::new(AtomicBool::new(false));
         let status_text = Arc::new(Mutex::new("Waiting for Apple Music...".to_string()));
         let hwnd_holder = Arc::new(AtomicIsize::new(0));
@@ -56,7 +57,7 @@ impl TrayIcon {
         let hwnd_clone = hwnd_holder.clone();
 
         thread::spawn(move || {
-            run_tray_thread(exit_clone, status_clone, hwnd_clone);
+            run_tray_thread(exit_clone, status_clone, hwnd_clone, config);
         });
 
         Self {
@@ -102,6 +103,7 @@ fn run_tray_thread(
     should_exit: Arc<AtomicBool>,
     status_text: Arc<Mutex<String>>,
     hwnd_out: Arc<AtomicIsize>,
+    config: Arc<RwLock<Config>>,
 ) {
     let class_name: Vec<u16> = OsStr::new("AppleMusicPresenceTrayClass")
         .encode_wide()
@@ -187,6 +189,7 @@ fn run_tray_thread(
             nid,
             status_text: status_text.clone(),
             should_exit: should_exit.clone(),
+            config,
             custom_icon,
             taskbar_created_msg,
             is_added,
@@ -308,6 +311,12 @@ unsafe fn show_menu(ctx: &TrayContext) {
         ID_MENU_PRESENCE,
         PCWSTR(presence_w.as_ptr()),
     );
+    let _ = AppendMenuW(
+        menu,
+        MF_SEPARATOR,
+        0,
+        PCWSTR::null(),
+    );
     let _ = AppendMenuW(menu, MF_STRING, ID_MENU_QUIT, PCWSTR(quit_w.as_ptr()));
 
     let mut cursor_pos = POINT::default();
@@ -330,7 +339,7 @@ unsafe fn show_menu(ctx: &TrayContext) {
 
     match cmd.0 as usize {
         ID_MENU_PRESENCE => {
-            let _ = Command::new("notepad.exe").arg("config.toml").spawn();
+            crate::gui::open_settings_window(ctx.config.clone());
         }
         ID_MENU_QUIT => {
             ctx.should_exit.store(true, Ordering::SeqCst);

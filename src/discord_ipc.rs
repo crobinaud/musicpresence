@@ -86,6 +86,16 @@ impl DiscordIpc {
         ipc
     }
 
+    pub fn update_client_id(&mut self, new_client_id: &str) {
+        if self.client_id != new_client_id {
+            let _ = self.clear_activity();
+            self.client_id = new_client_id.to_string();
+            self.pipe = None;
+            self.is_connected = false;
+            let _ = self.connect();
+        }
+    }
+
     /// Attempts to connect to one of the Discord IPC named pipes (0 to 9)
     pub fn connect(&mut self) -> Result<(), String> {
         if self.is_connected && self.pipe.is_some() {

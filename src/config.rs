@@ -10,6 +10,12 @@ pub struct Config {
     pub client_id: String,
     /// Polling interval in milliseconds (e.g., 1500ms)
     pub poll_interval_ms: u64,
+    /// Launch Music Presence automatically on Windows startup
+    #[serde(default)]
+    pub auto_start: bool,
+    /// Check for updates on startup
+    #[serde(default = "default_true")]
+    pub auto_update: bool,
     /// Display presence when music is paused
     pub show_paused: bool,
     /// Automatically fetch HD album art from Apple iTunes Search API
@@ -20,11 +26,17 @@ pub struct Config {
     pub filter_apple_music_only: bool,
 }
 
+fn default_true() -> bool {
+    true
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
             client_id: DEFAULT_CLIENT_ID.to_string(),
             poll_interval_ms: 1500,
+            auto_start: false,
+            auto_update: true,
             show_paused: true,
             fetch_itunes_art: true,
             enable_listen_button: true,
@@ -78,6 +90,9 @@ client_id = "1046420605907501056"
 # Verification interval in milliseconds (1500 = 1.5 seconds)
 poll_interval_ms = 1500
 
+# Launch automatically when Windows starts
+auto_start = false
+
 # Show Discord presence when music is paused (true = shows "Paused", false = hides presence)
 show_paused = true
 
@@ -93,6 +108,12 @@ filter_apple_music_only = true
 
         let _ = fs::write(path, default_toml);
         default_config
+    }
+
+    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), std::io::Error> {
+        let toml_str = toml::to_string_pretty(self)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        fs::write(path, toml_str)
     }
 }
 

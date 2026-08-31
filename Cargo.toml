@@ -1,8 +1,8 @@
 [package]
-name = "amprust"
+name = "musicpresence"
 version = "1.0.0"
 edition = "2021"
-authors = ["Cyprien"]
+authors = ["Cyprien ROBINAUD"]
 description = "Apple Music Discord Rich Presence in pure optimized Rust"
 
 [dependencies]
@@ -22,6 +22,8 @@ windows = { version = "0.58", features = [
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
     "Win32_Graphics_Gdi",
+    "Win32_Graphics_Dwm",
+    "Win32_System_Registry",
 ] }
 tray-item = "0.10.0"
 

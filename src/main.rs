@@ -1,10 +1,13 @@
 #![windows_subsystem = "windows"]
 
+mod autostart;
 mod config;
 mod discord_ipc;
+mod gui;
 mod itunes;
 mod media;
 mod tray;
+mod updater;
 
 use config::Config;
 use discord_ipc::{Activity, Assets, Button, DiscordIpc, Timestamps};
@@ -13,6 +16,7 @@ use media::{MediaManager, PlaybackState, TrackInfo};
 use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tray::TrayIcon;
@@ -46,16 +50,46 @@ fn main() {
         }
     }
 
-    log_status("Starting Apple Music Discord Presence...");
+    // Clean up any temporary files from past updates
+    updater::cleanup_old_binary();
+
+    log_status(&format!(
+        "Starting Music Presence v{}...",
+        updater::CURRENT_VERSION
+    ));
 
     // Load or create configuration
-    let config = Config::load_or_create("config.toml");
+    let config = Arc::new(RwLock::new(Config::load_or_create("config.toml")));
+
+    // Sync autostart registry state with config if enabled
+    if let Ok(cfg) = config.read() {
+        if cfg.auto_start && !autostart::is_autostart_enabled() {
+            let _ = autostart::set_autostart(true);
+        }
+    }
+
+    // Check for updates in background if auto-update is enabled
+    if config.read().map(|c| c.auto_update).unwrap_or(true) {
+        thread::spawn(|| {
+            if let Ok(Some(info)) = updater::check_for_updates() {
+                log_status(&format!(
+                    "[UPDATER] New update available: v{} (Current: v{})",
+                    info.latest_version, info.current_version
+                ));
+            }
+        });
+    }
+
+    let initial_client_id = config
+        .read()
+        .map(|c| c.client_id.clone())
+        .unwrap_or_else(|_| config::DEFAULT_CLIENT_ID.to_string());
 
     // Initialize core modules
     let mut media_manager = MediaManager::new();
     let mut itunes_client = ItunesClient::new();
-    let mut discord = DiscordIpc::new(config.client_id.clone());
-    let tray = TrayIcon::new();
+    let mut discord = DiscordIpc::new(initial_client_id);
+    let tray = TrayIcon::new(config.clone());
 
     let mut last_track: Option<TrackInfo> = None;
     let mut last_display_time = SystemTime::now();
@@ -68,7 +102,14 @@ fn main() {
             break;
         }
 
-        let current_track = media_manager.get_current_track(config.filter_apple_music_only);
+        let cfg = match config.read() {
+            Ok(c) => c.clone(),
+            Err(_) => Config::default(),
+        };
+
+        discord.update_client_id(&cfg.client_id);
+
+        let current_track = media_manager.get_current_track(cfg.filter_apple_music_only);
 
         match &current_track {
             Some(track) => {
@@ -89,7 +130,7 @@ fn main() {
                     last_display_time = SystemTime::now();
 
                     // Search for high-resolution album artwork and Apple Music link
-                    let itunes_meta = if config.fetch_itunes_art {
+                    let itunes_meta = if cfg.fetch_itunes_art {
                         itunes_client.search(&track.title, &track.artist)
                     } else {
                         None
@@ -107,7 +148,7 @@ fn main() {
 
                     // Build Discord Rich Presence Activity
                     if track.state == PlaybackState::Playing
-                        || (track.state == PlaybackState::Paused && config.show_paused)
+                        || (track.state == PlaybackState::Paused && cfg.show_paused)
                     {
                         let mut activity = Activity {
                             activity_type: Some(2),
@@ -163,7 +204,7 @@ fn main() {
                         });
 
                         // "Listen on Apple Music" button
-                        if config.enable_listen_button {
+                        if cfg.enable_listen_button {
                             let url =
                                 track_url.unwrap_or_else(|| "https://music.apple.com".to_string());
                             activity.buttons = Some(vec![Button {
@@ -211,7 +252,7 @@ fn main() {
         last_track = current_track;
 
         // Periodic polling sliced into 50ms intervals to quickly respond to quit requests
-        let poll_ms = config.poll_interval_ms;
+        let poll_ms = cfg.poll_interval_ms;
         let slices = (poll_ms / 50).max(1);
         for _ in 0..slices {
             if tray.is_exit_requested() {
