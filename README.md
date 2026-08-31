@@ -81,11 +81,11 @@ The application runs seamlessly in the Windows notification area (System Tray):
 ### Running
 1. Download either the **Stable** or **Beta** archive from the download buttons above.
 2. Extract the files to your desired folder.
-3. Launch **`AppleMusicPresence.exe`** (or `run.bat`).
+3. Launch **`AppleMusicPresence.exe`**.
 4. Start playing music in Apple Music — your Discord profile will automatically reflect your playback!
 
 ### Stopping
-- Right-click the red Apple Music icon in the system tray > click **Quit** (or run `stop.bat`).
+- Right-click or left-click the Apple Music icon in the system tray > click **Quit**.
 
 ---
 

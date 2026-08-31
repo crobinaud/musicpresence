@@ -14,8 +14,6 @@ use discord_ipc::{Activity, Assets, Button, DiscordIpc, Timestamps};
 use itunes::ItunesClient;
 use media::{MediaManager, PlaybackState, TrackInfo};
 use std::env;
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -53,11 +51,6 @@ fn main() {
     // Clean up any temporary files from past updates
     updater::cleanup_old_binary();
 
-    log_status(&format!(
-        "Starting Music Presence v{}...",
-        updater::CURRENT_VERSION
-    ));
-
     // Load or create configuration
     let config = Arc::new(RwLock::new(Config::load_or_create("config.toml")));
 
@@ -71,12 +64,7 @@ fn main() {
     // Check for updates in background if auto-update is enabled
     if config.read().map(|c| c.auto_update).unwrap_or(true) {
         thread::spawn(|| {
-            if let Ok(Some(info)) = updater::check_for_updates() {
-                log_status(&format!(
-                    "[UPDATER] New update available: v{} (Current: v{})",
-                    info.latest_version, info.current_version
-                ));
-            }
+            let _ = updater::check_for_updates();
         });
     }
 
@@ -97,7 +85,6 @@ fn main() {
     loop {
         // Check if user clicked Exit/Quit in the System Tray menu
         if tray.is_exit_requested() {
-            log_status("Exit requested by user.");
             let _ = discord.clear_activity();
             break;
         }
@@ -213,26 +200,9 @@ fn main() {
                             }]);
                         }
 
-                        let res = discord.set_activity(activity);
-                        let status_msg = format!(
-                            "[{}] {} - {} ({})",
-                            if is_playing { "PLAYING" } else { "PAUSED" },
-                            track.title,
-                            track.artist,
-                            if discord.is_connected {
-                                "Discord active (Listening)"
-                            } else {
-                                "Discord connecting"
-                            }
-                        );
-
-                        log_status(&status_msg);
+                        let _ = discord.set_activity(activity);
 
                         tray.update_status(&format!("{} - {}", track.title, track.artist));
-
-                        if let Err(e) = res {
-                            log_status(&format!("Discord RPC Error: {}", e));
-                        }
                     } else {
                         // Paused and show_paused is disabled
                         let _ = discord.clear_activity();
@@ -243,7 +213,6 @@ fn main() {
             None => {
                 if last_track.is_some() {
                     let _ = discord.clear_activity();
-                    log_status("No active playback on Apple Music. Idle...");
                     tray.update_status("Idle (no playback)");
                 }
             }
@@ -256,25 +225,10 @@ fn main() {
         let slices = (poll_ms / 50).max(1);
         for _ in 0..slices {
             if tray.is_exit_requested() {
-                log_status("Exit requested by user.");
                 let _ = discord.clear_activity();
                 return;
             }
             thread::sleep(Duration::from_millis(50));
         }
-    }
-}
-
-pub fn log_status(msg: &str) {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    if let Ok(mut file) = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("amprust.log")
-    {
-        let _ = writeln!(file, "[{}] {}", now, msg);
     }
 }

@@ -137,10 +137,7 @@ fn run_tray_thread(
             None,
         ) {
             Ok(h) => h,
-            Err(e) => {
-                crate::log_status(&format!("[TRAY_ERROR] CreateWindowExW failed: {:?}", e));
-                return;
-            }
+            Err(_) => return,
         };
 
         hwnd_out.store(hwnd.0 as isize, Ordering::SeqCst);
@@ -179,10 +176,6 @@ fn run_tray_thread(
         let _ = Shell_NotifyIconW(NIM_DELETE, &nid);
         let add_res = Shell_NotifyIconW(NIM_ADD, &nid);
         let is_added = add_res.as_bool();
-        crate::log_status(&format!(
-            "[TRAY_INIT] NIM_ADD result={:?}, HWND={:?}",
-            add_res, hwnd
-        ));
 
         let context = Box::new(TrayContext {
             hwnd,
@@ -239,13 +232,11 @@ unsafe extern "system" fn wnd_proc(
                 let res = Shell_NotifyIconW(NIM_ADD, &ctx.nid);
                 if res.as_bool() {
                     ctx.is_added = true;
-                    crate::log_status("[TRAY_INIT] System Tray successfully connected to taskbar!");
                     let _ = KillTimer(hwnd, 1);
                 }
             }
             return LRESULT(0);
         } else if ctx.taskbar_created_msg != 0 && msg == ctx.taskbar_created_msg {
-            crate::log_status("[TRAY_EVENT] TaskbarCreated received, re-adding icon...");
             let res = Shell_NotifyIconW(NIM_ADD, &ctx.nid);
             ctx.is_added = res.as_bool();
             return LRESULT(0);

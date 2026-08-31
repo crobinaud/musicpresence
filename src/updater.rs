@@ -140,7 +140,5 @@ pub fn apply_update(download_url: &str) -> Result<(), String> {
 
     // Launch the updated executable
     let _ = Command::new(&current_exe).spawn();
-
-    crate::log_status("[UPDATER] Update applied successfully. Restarting application...");
     std::process::exit(0);
 }

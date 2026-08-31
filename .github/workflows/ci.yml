@@ -88,14 +88,12 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "release-package" -Force | Out-Null
-          Copy-Item "target/release/amprust.exe" "release-package/AppleMusicPresence.exe"
+          Copy-Item "target/release/musicpresence.exe" "release-package/AppleMusicPresence.exe"
           Copy-Item "config.toml" "release-package/config.toml"
-          Copy-Item "run.bat" "release-package/run.bat"
-          Copy-Item "stop.bat" "release-package/stop.bat"
           Copy-Item "README.md" "release-package/README.md"
           
           Compress-Archive -Path "release-package/*" -DestinationPath "AppleMusicPresence-windows-x64.zip" -Force
-          Copy-Item "target/release/amprust.exe" "AppleMusicPresence.exe"
+          Copy-Item "target/release/musicpresence.exe" "AppleMusicPresence.exe"
 
       - name: Upload Binary Artifacts
         uses: actions/upload-artifact@v4

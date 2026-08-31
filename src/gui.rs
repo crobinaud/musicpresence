@@ -123,10 +123,7 @@ fn run_settings_gui(config: Arc<RwLock<Config>>) {
             None,
         ) {
             Ok(h) => h,
-            Err(e) => {
-                crate::log_status(&format!("[GUI_ERROR] CreateWindowExW failed: {:?}", e));
-                return;
-            }
+            Err(_) => return,
         };
 
         SETTINGS_HWND.store(hwnd.0 as isize, Ordering::SeqCst);
@@ -717,12 +714,7 @@ unsafe fn save_settings(ctx: &SettingsContext) -> bool {
     current_config.auto_update = auto_update;
 
     // Apply startup registry setting
-    if let Err(e) = crate::autostart::set_autostart(auto_start) {
-        crate::log_status(&format!(
-            "[WARN] Failed to configure Windows startup registry: {}",
-            e
-        ));
-    }
+    let _ = crate::autostart::set_autostart(auto_start);
 
     // Save to config.toml
     if let Err(e) = current_config.save("config.toml") {
@@ -742,10 +734,6 @@ unsafe fn save_settings(ctx: &SettingsContext) -> bool {
         *cfg_guard = current_config;
     }
 
-    crate::log_status(&format!(
-        "[CONFIG] Settings updated (interval: {} ms, autostart: {}, autoupdate: {}) via GUI.",
-        poll_interval_ms, auto_start, auto_update
-    ));
     true
 }
 
