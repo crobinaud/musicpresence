@@ -1,6 +1,6 @@
 [package]
 name = "musicpresence"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 authors = ["Cyprien ROBINAUD"]
 description = "Lightweight and elegant Apple Music Discord Rich Presence. Real-time playback, HD album art, and native performance built in pure Rust."
