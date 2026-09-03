@@ -106,4 +106,6 @@ cargo build --release
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+Copyright © 2026 Cyprien ROBINAUD. All rights reserved.
+
+This software is **Source-Available**: the source code is public for educational review and security auditing, but redistribution, commercial use, and unauthorized forks are strictly prohibited. See [LICENSE](LICENSE) for details.
