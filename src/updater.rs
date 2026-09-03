@@ -65,12 +65,16 @@ pub fn check_for_updates() -> Result<Option<UpdateInfo>, String> {
         GITHUB_REPO
     );
 
-    let resp = ureq::get(&url)
+    let resp = match ureq::get(&url)
         .set("User-Agent", "MusicPresence-Updater")
         .set("Accept", "application/vnd.github.v3+json")
         .timeout(std::time::Duration::from_secs(8))
         .call()
-        .map_err(|e| format!("Failed to reach GitHub API: {}", e))?;
+    {
+        Ok(resp) => resp,
+        Err(ureq::Error::Status(404, _)) => return Ok(None),
+        Err(e) => return Err(format!("Failed to reach GitHub API: {}", e)),
+    };
 
     let release: GithubRelease = resp
         .into_json()
