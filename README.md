@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square&logo=windows&logoColor=white" alt="Platform: Windows" />
   <img src="https://img.shields.io/badge/Language-Rust-dea584?style=flat-square&logo=rust&logoColor=white" alt="Language: Rust" />
   <img src="https://img.shields.io/badge/CI%2FCD-Automated%20Releases-2ea44f?style=flat-square&logo=githubactions&logoColor=white" alt="CI/CD" />
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/License-Proprietary-lightgrey?style=flat-square" alt="License" />
 </p>
 
 Lightweight and elegant Apple Music Discord Rich Presence. Real-time playback, HD album art, and native performance built in pure Rust.
@@ -39,12 +39,12 @@ Lightweight and elegant Apple Music Discord Rich Presence. Real-time playback, H
 
 ## 📥 Downloads
 
-Binary builds are automatically generated and packaged by GitHub Actions CI/CD:
+Binary builds and Windows installers are automatically generated via GitHub Actions:
 
-| Version | Branch | Status | Direct Link |
+| Version | Branch | Delivery | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **Stable Release** | `main` | Production-ready | [**Download Latest Stable**](https://github.com/crobinaud/musicpresence/releases/latest) |
-| **Beta Pre-release** | `develop` | Latest features & test builds | [**Download Latest Beta**](https://github.com/crobinaud/musicpresence/releases) |
+| **Stable Release** | `main` | Automated production release | [**Download Latest Stable**](https://github.com/crobinaud/musicpresence/releases/latest) |
+| **Beta Pre-release** | `develop` | Manually triggered test build | [**Download Latest Beta**](https://github.com/crobinaud/musicpresence/releases) |
 
 ---
 
@@ -80,14 +80,18 @@ The application runs seamlessly in the system tray / notification area:
 
 ## 🚀 Getting Started
 
-### Running
-1. Download either the **Stable** or **Beta** archive from the download buttons above.
-2. Extract the files to your desired folder.
-3. Launch **`MusicPresence.exe`**.
-4. Start playing music in Apple Music — your Discord profile will automatically reflect your playback!
+### Installation (Recommended)
+1. Download **`MusicPresence-Setup.exe`** from the [**Download Latest Stable**](https://github.com/crobinaud/musicpresence/releases/latest) button above.
+2. Run the installer and follow the setup wizard (creates Start Menu & Desktop shortcuts, enables clean Windows integration).
+3. Start playing music in Apple Music — your Discord profile will automatically reflect your playback!
 
-### Stopping
-- Right-click or left-click the Apple Music icon in the system tray > click **Quit**.
+### Portable Version
+1. Download the portable zip archive (`MusicPresence-windows-x64.zip`) or raw `MusicPresence.exe`.
+2. Extract the files to any folder and run `MusicPresence.exe`.
+
+### Stopping & Uninstallation
+* **Exit**: Right-click or left-click the Apple Music icon in the system tray > click **Quit**.
+* **Uninstall**: If installed via `MusicPresence-Setup.exe`, open **Windows Settings > Apps > Installed apps**, find **MusicPresence**, and click **Uninstall**.
 
 ---
 
