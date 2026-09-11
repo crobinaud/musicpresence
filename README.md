@@ -20,78 +20,56 @@
 Lightweight and elegant Apple Music Discord Rich Presence. Real-time playback, HD album art, and native performance built in pure Rust.
 
 > [!NOTE]
-> **Platform Support**: Currently supported and tested on **Windows (10 & 11 64-bit)**.
+> **Platform Support**: MusicPresence is developed specifically for **Windows (10 & 11 64-bit)** and will remain strictly **Windows-only** (relying on Windows native GSMTC and Win32 APIs).
 
 ---
 
 ## ✨ Features
 
-- 🎧 **Native Rich Presence**: Displays track title, artist, album, live timestamps & playback progress on Discord.
-- 🖼️ **HD Album Artwork**: Automatically fetches high-resolution album covers via Apple iTunes Search API.
-- 🔗 **Listen on Apple Music Button**: Clickable Discord button directly leading to the track.
-- ⚡ **Zero Bloat & High Performance**: Pure native Rust binary with no heavy web runtimes (uses under 15 MB RAM and ~0% CPU).
-- 🎛️ **Interactive Settings GUI**: Lightweight native configuration window displaying current version, adjusting refresh interval, and managing settings.
-- 🚀 **Auto-Start**: Option to automatically start MusicPresence when booting your computer.
-- 🔄 **GitHub Self-Updater**: Automatic update checks with direct in-app download and installation from GitHub releases.
-- 🔴 **System Tray Integration**: Background execution with dynamic hover tooltip and quick context menu.
+- 🎧 **Real-Time Discord Presence**: Displays playback status (Playing / Paused), track title, artist, album, live timestamps, and interactive progress bar via low-latency native IPC.
+- 🖼️ **HD Album Artwork**: Automatically queries the Apple iTunes Search API for crisp, high-resolution album covers.
+- 🔗 **Customizable Discord Button**: Clickable profile button linking directly to the track on Apple Music with a configurable label (e.g. *"Écouter ensemble"*).
+- ⚡ **Ultra-Lightweight & Fast**: Written in 100% pure Rust with zero web/Electron bloat (~15 MB RAM, virtually 0% CPU).
+- 🎛️ **Native Settings Window**: Built with native Win32/DWM dark mode to configure polling interval, button label, autostart, and updates.
+- 🔴 **System Tray Companion**: Runs silently in the background with hover track info and a quick context menu.
+- 🚀 **Windows Autostart**: Optional native Windows registry integration to start automatically on system boot.
+- 🔄 **Built-in Self-Updater**: Background update checks with one-click direct upgrade from GitHub Releases.
+- 🛡️ **Single-Instance Protection**: Named Windows Mutex prevents multiple background instances from running simultaneously.
 
 ---
 
-## 📥 Downloads
+## 🔮 Planned Support (Roadmap)
 
-Binary builds and Windows installers are automatically generated via GitHub Actions:
+While currently focused on Apple Music, upcoming versions will expand player integration on Windows to:
+- 🟣 **Deezer**
+- 📦 **Amazon Music**
+- 🎵 **iTunes** (Windows Desktop)
 
-| Version | Branch | Delivery | Direct Link |
-| :--- | :--- | :--- | :--- |
-| **Stable Release** | `main` | Automated production release | [**Download Latest Stable**](https://github.com/crobinaud/musicpresence/releases/latest) |
-| **Beta Pre-release** | `develop` | Manually triggered test build | [**Download Latest Beta**](https://github.com/crobinaud/musicpresence/releases) |
-
----
-
-## 📁 Codebase Architecture
-
-For a detailed technical overview and diagrams, see [**ARCHITECTURE.md**](ARCHITECTURE.md).
-
-```text
-src/
-├── main.rs          # Main event loop & lifecycle management
-├── config.rs        # Configuration loader & manager (config.toml)
-├── autostart.rs     # System boot autostart manager
-├── updater.rs       # GitHub Release API checker & in-place self-updater
-├── gui.rs           # Native interactive Settings GUI window
-├── tray.rs          # System tray icon & native context menu
-├── itunes.rs        # High-resolution album artwork search via Apple iTunes API
-├── media.rs         # Media session & playback capture (GSMTC)
-└── discord_ipc.rs   # Low-overhead Discord IPC named pipe protocol
-```
-
----
-
-## 🔴 System Tray & Interactive Settings
-
-The application runs seamlessly in the system tray / notification area:
-- **Hover**: Displays the currently playing track name and artist.
-- **Left / Right Click**: Opens the context menu:
-  - **Music Presence**: Opens the native interactive **Settings** window to view version, adjust refresh interval, toggle startup on boot, and check for updates directly.
-  - *Separator*
-  - **Quit**: Closes the application and immediately clears your Discord Rich Presence.
+*(MusicPresence will remain Windows-only across all future player integrations.)*
 
 ---
 
 ## 🚀 Getting Started
 
-### Installation (Recommended)
-1. Download **`MusicPresence-Setup.exe`** from the [**Download Latest Stable**](https://github.com/crobinaud/musicpresence/releases/latest) button above.
-2. Run the installer and follow the setup wizard (creates Start Menu & Desktop shortcuts, enables clean Windows integration).
-3. Start playing music in Apple Music — your Discord profile will automatically reflect your playback!
+### Installation Options
 
-### Portable Version
-1. Download the portable zip archive (`MusicPresence-windows-x64.zip`) or raw `MusicPresence.exe`.
-2. Extract the files to any folder and run `MusicPresence.exe`.
+| Version | Description | Link |
+| :--- | :--- | :--- |
+| **Installer (.exe)** *(Recommended)* | Setup wizard with Start Menu & Desktop shortcuts, clean Windows integration | [**Download Latest Stable**](https://github.com/crobinaud/musicpresence/releases/latest) |
+| **Portable (.zip / .exe)** | Standalone binary with no installation required | [**Releases Archive**](https://github.com/crobinaud/musicpresence/releases) |
+| **Beta Pre-release** | Bleeding-edge test builds from the `develop` branch | [**Download Beta**](https://github.com/crobinaud/musicpresence/releases) |
 
-### Stopping & Uninstallation
-* **Exit**: Right-click or left-click the Apple Music icon in the system tray > click **Quit**.
-* **Uninstall**: If installed via `MusicPresence-Setup.exe`, open **Windows Settings > Apps > Installed apps**, find **MusicPresence**, and click **Uninstall**.
+### Controls & Tray Usage
+
+The application lives in your Windows system tray:
+- **Hover**: Shows the currently playing track title and artist.
+- **Left / Right Click**:
+  - **Music Presence**: Opens the native configuration settings window.
+  - **Quit**: Exits the application and immediately clears your Discord presence.
+
+### Uninstallation
+
+If installed using `MusicPresence-Setup.exe`, uninstall at any time from **Windows Settings > Apps > Installed apps > MusicPresence > Uninstall**.
 
 ---
 
@@ -105,6 +83,8 @@ cd musicpresence
 # Build optimized release binary
 cargo build --release
 ```
+
+The compiled binary will be located at `target/release/MusicPresence.exe`.
 
 ---
 

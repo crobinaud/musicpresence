@@ -6,7 +6,7 @@ on:
       release_note:
         description: "Release summary for this Beta"
         required: false
-        default: "Automated rolling pre-release build from develop branch."
+        default: "Manual pre-release build from develop branch."
 
 concurrency:
   group: cd-beta-release
@@ -22,6 +22,14 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Validate Branch is develop
+        shell: bash
+        run: |
+          echo "Triggered on ref: ${{ github.ref }}"
+          if [ "${{ github.ref_name }}" != "develop" ]; then
+            echo "⚠️ Notice: This beta workflow is running on branch '${{ github.ref_name }}'. The develop branch is recommended for beta releases."
+          fi
 
       - name: Setup Rust Toolchain (Stable)
         uses: dtolnay/rust-toolchain@stable
@@ -48,15 +56,26 @@ jobs:
           Compress-Archive -Path "release-package/*" -DestinationPath "MusicPresence-windows-x64.zip" -Force
           Copy-Item "target/release/MusicPresence.exe" "MusicPresence.exe"
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+
+      - name: Build Windows Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=beta" "/FMusicPresence-Beta-Setup" installer/installer.iss
+
       - name: Publish Beta Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: beta
           name: "MusicPresence Beta (Develop)"
-          body: ${{ github.event.inputs.release_note || 'Automated rolling pre-release build from develop branch.' }}
+          body: ${{ github.event.inputs.release_note || 'Manual pre-release build from develop branch.' }}
           prerelease: true
           make_latest: false
           files: |
+            MusicPresence-Beta-Setup.exe
             MusicPresence.exe
             MusicPresence-windows-x64.zip
         env:

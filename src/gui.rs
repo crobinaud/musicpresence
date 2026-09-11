@@ -40,6 +40,7 @@ const ID_BTN_CHECK_UPDATE: usize = 2004;
 const ID_BTN_SAVE: usize = 2005;
 const ID_BTN_CANCEL: usize = 2006;
 const ID_BTN_RESET: usize = 2007;
+const ID_EDIT_BUTTON_LABEL: usize = 2008;
 
 struct SettingsContext {
     hwnd: HWND,
@@ -51,6 +52,7 @@ struct SettingsContext {
     bg_brush: HBRUSH,
     edit_brush: HBRUSH,
     hwnd_poll_interval: HWND,
+    hwnd_button_label: HWND,
     hwnd_autostart: HWND,
     hwnd_autoupdate: HWND,
 }
@@ -99,7 +101,7 @@ fn run_settings_gui(config: Arc<RwLock<Config>>) {
         let _ = RegisterClassW(&wnd_class);
 
         let win_width = 430;
-        let win_height = 385;
+        let win_height = 450;
 
         let screen_w = GetSystemMetrics(SM_CXSCREEN);
         let screen_h = GetSystemMetrics(SM_CYSCREEN);
@@ -216,6 +218,7 @@ fn run_settings_gui(config: Arc<RwLock<Config>>) {
             bg_brush,
             edit_brush,
             hwnd_poll_interval: HWND(std::ptr::null_mut()),
+            hwnd_button_label: HWND(std::ptr::null_mut()),
             hwnd_autostart: HWND(std::ptr::null_mut()),
             hwnd_autoupdate: HWND(std::ptr::null_mut()),
         });
@@ -336,7 +339,7 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             18,
             68,
             378,
-            218,
+            278,
             parent,
             None,
             hinstance,
@@ -423,6 +426,79 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             LPARAM(1),
         );
 
+        // Label: Discord button text
+        let lbl_btn_label = to_wstring("Discord button label:");
+        let h_lbl_btn_label = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("STATIC"),
+            PCWSTR(lbl_btn_label.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
+            32,
+            146,
+            260,
+            18,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_lbl_btn_label,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
+
+        // Edit: Discord button text
+        let btn_label_val = to_wstring(&cfg.listen_button_label);
+        let h_edit_btn_label = CreateWindowExW(
+            WS_EX_CLIENTEDGE,
+            w!("EDIT"),
+            PCWSTR(btn_label_val.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP,
+            32,
+            168,
+            170,
+            24,
+            parent,
+            windows::Win32::UI::WindowsAndMessaging::HMENU(ID_EDIT_BUTTON_LABEL as *mut _),
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_edit_btn_label,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
+        ctx.hwnd_button_label = h_edit_btn_label;
+
+        // Helper text for button label
+        let help_btn_text = to_wstring("(e.g. Écouter ensemble)");
+        let h_lbl_help_btn = CreateWindowExW(
+            WINDOW_EX_STYLE(0),
+            w!("STATIC"),
+            PCWSTR(help_btn_text.as_ptr()),
+            WS_CHILD | WS_VISIBLE | WINDOW_STYLE(SS_LEFT),
+            212,
+            172,
+            170,
+            18,
+            parent,
+            None,
+            hinstance,
+            None,
+        )
+        .unwrap_or_default();
+        SendMessageW(
+            h_lbl_help_btn,
+            WM_SETFONT,
+            WPARAM(ctx.font_regular.0 as isize as usize),
+            LPARAM(1),
+        );
+
         // Checkbox: Launch on system startup
         let chk_autostart_text = to_wstring("Start Music Presence on Windows startup");
         let h_chk_autostart = CreateWindowExW(
@@ -431,7 +507,7 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             PCWSTR(chk_autostart_text.as_ptr()),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
             32,
-            152,
+            204,
             340,
             22,
             parent,
@@ -468,7 +544,7 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             PCWSTR(chk_autoupdate_text.as_ptr()),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
             32,
-            182,
+            232,
             340,
             22,
             parent,
@@ -504,7 +580,7 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             PCWSTR(btn_check_text.as_ptr()),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
             32,
-            218,
+            266,
             140,
             28,
             parent,
@@ -529,7 +605,7 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             PCWSTR(btn_reset_text.as_ptr()),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
             18,
-            304,
+            362,
             84,
             28,
             parent,
@@ -553,7 +629,7 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             PCWSTR(btn_cancel_text.as_ptr()),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_PUSHBUTTON as u32),
             216,
-            304,
+            362,
             84,
             28,
             parent,
@@ -577,7 +653,7 @@ unsafe fn create_controls(parent: HWND, ctx: &mut SettingsContext, hinstance: HI
             PCWSTR(btn_save_text.as_ptr()),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_DEFPUSHBUTTON as u32),
             312,
-            304,
+            362,
             84,
             28,
             parent,
@@ -715,12 +791,20 @@ unsafe fn save_settings(ctx: &SettingsContext) -> bool {
             as usize
             == BST_CHECKED;
 
+        let btn_label_str = get_window_text_string(ctx.hwnd_button_label);
+        let listen_button_label = if btn_label_str.trim().is_empty() {
+            "Écouter ensemble".to_string()
+        } else {
+            btn_label_str.trim().to_string()
+        };
+
         let mut current_config = match ctx.config.read() {
             Ok(c) => c.clone(),
             Err(_) => Config::default(),
         };
 
         current_config.poll_interval_ms = poll_interval_ms;
+        current_config.listen_button_label = listen_button_label;
         current_config.auto_start = auto_start;
         current_config.auto_update = auto_update;
 
@@ -754,6 +838,8 @@ unsafe fn reset_to_defaults(ctx: &SettingsContext) {
         let def = Config::default();
         let poll_w = to_wstring(&def.poll_interval_ms.to_string());
         let _ = SetWindowTextW(ctx.hwnd_poll_interval, PCWSTR(poll_w.as_ptr()));
+        let btn_lbl_w = to_wstring(&def.listen_button_label);
+        let _ = SetWindowTextW(ctx.hwnd_button_label, PCWSTR(btn_lbl_w.as_ptr()));
         let _ = SendMessageW(
             ctx.hwnd_autostart,
             BM_SETCHECK,

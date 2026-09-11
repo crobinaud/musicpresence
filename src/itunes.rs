@@ -78,11 +78,7 @@ impl ItunesClient {
 
         let track = parsed.results.into_iter().next()?;
 
-        let artwork_url = track.artwork_url_100.map(|url| {
-            // Replace 100x100 thumbnail with 1024x1024 high resolution
-            url.replace("100x100bb", "1024x1024bb")
-                .replace("100x100", "1024x1024")
-        })?;
+        let artwork_url = track.artwork_url_100?;
 
         Some(ItunesMetadata {
             artwork_url,

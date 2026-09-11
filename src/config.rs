@@ -20,14 +20,21 @@ pub struct Config {
     pub show_paused: bool,
     /// Automatically fetch HD album art from Apple iTunes Search API
     pub fetch_itunes_art: bool,
-    /// Display clickable "Listen on Apple Music" button in Discord
+    /// Display clickable button in Discord
     pub enable_listen_button: bool,
+    /// Text label for the Discord button (default: "Écouter ensemble")
+    #[serde(default = "default_button_label")]
+    pub listen_button_label: String,
     /// Filter exclusively for Apple Music (or any Windows media player)
     pub filter_apple_music_only: bool,
 }
 
 fn default_true() -> bool {
     true
+}
+
+fn default_button_label() -> String {
+    "Écouter ensemble".to_string()
 }
 
 impl Default for Config {
@@ -40,6 +47,7 @@ impl Default for Config {
             show_paused: true,
             fetch_itunes_art: true,
             enable_listen_button: true,
+            listen_button_label: "Écouter ensemble".to_string(),
             filter_apple_music_only: true,
         }
     }
@@ -99,8 +107,11 @@ show_paused = true
 # Fetch high-resolution album artwork via Apple iTunes API
 fetch_itunes_art = true
 
-# Display clickable "Listen on Apple Music" button in Discord
+# Display clickable button in Discord
 enable_listen_button = true
+
+# Text label for the Discord button
+listen_button_label = "Écouter ensemble"
 
 # Detect Apple Music only (set to false to support any Windows media player)
 filter_apple_music_only = true
@@ -133,7 +144,7 @@ pub fn format_listening_title(title: &str) -> String {
 }
 
 /// Safely truncates a string respecting UTF-8 character boundaries
-fn truncate_utf8(s: &str, max_bytes: usize) -> String {
+pub fn truncate_utf8(s: &str, max_bytes: usize) -> String {
     if s.len() <= max_bytes {
         return s.to_string();
     }

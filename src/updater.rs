@@ -88,7 +88,7 @@ pub fn check_for_updates() -> Result<Option<UpdateInfo>, String> {
         let exe_asset = release
             .assets
             .into_iter()
-            .find(|a| a.name == "MusicPresence.exe" || a.name.ends_with(".exe"))
+            .find(|a| a.name == "MusicPresence.exe")
             .map(|a| a.browser_download_url);
 
         Ok(Some(UpdateInfo {

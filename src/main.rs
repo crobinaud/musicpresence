@@ -191,14 +191,17 @@ fn main() {
                             }),
                         });
 
-                        // "Listen on Apple Music" button
+                        // "Écouter ensemble" / Listen button
                         if cfg.enable_listen_button {
                             let url =
                                 track_url.unwrap_or_else(|| "https://music.apple.com".to_string());
-                            activity.buttons = Some(vec![Button {
-                                label: "Listen on Apple Music".to_string(),
-                                url,
-                            }]);
+                            let raw_label = if cfg.listen_button_label.trim().is_empty() {
+                                "Écouter ensemble"
+                            } else {
+                                cfg.listen_button_label.trim()
+                            };
+                            let label = config::truncate_utf8(raw_label, 32);
+                            activity.buttons = Some(vec![Button { label, url }]);
                         }
 
                         let _ = discord.set_activity(activity);

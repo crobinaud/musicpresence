@@ -85,6 +85,17 @@ jobs:
           Compress-Archive -Path "release-package/*" -DestinationPath "MusicPresence-windows-x64.zip" -Force
           Copy-Item "target/release/MusicPresence.exe" "MusicPresence.exe"
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+
+      - name: Build Windows Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.semver.outputs.version }}"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=$ver" installer/installer.iss
+
       - name: Commit & Push Version Bump and Changelog
         shell: bash
         run: |
@@ -113,6 +124,7 @@ jobs:
           prerelease: false
           make_latest: true
           files: |
+            MusicPresence-Setup.exe
             MusicPresence.exe
             MusicPresence-windows-x64.zip
         env:
